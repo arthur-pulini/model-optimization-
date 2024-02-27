@@ -93,6 +93,7 @@ graph = graphviz.Source(dotData)
 #graph.view()
 
 #Definindo parâmetros
+print("\n\n Testing diferents max_depth: \n\n")
 def DecisionTree (max_depth):
     cv = GroupKFold(n_splits=10)
     decisionTreeModel = DecisionTreeClassifier(max_depth=max_depth)
@@ -104,7 +105,6 @@ def DecisionTree (max_depth):
     return table
 
 #Analisando gracicamente o desempenho do test relacionado ao treino
-print("Testing diferents max_depth: \n\n")
 averagesResult = [DecisionTree(i) for i in range(1,33)]
 averagesResult = pd.DataFrame(averagesResult, columns = ['max_depth', 'train', 'test'])
 print(averagesResult.head())
@@ -115,3 +115,65 @@ plt.legend(["train", "test"])
 #plt.show()
 
 print(averagesResult.sort_values("test", ascending=False))
+
+#Explorando hiperparametros em duas dimensões
+print("\n\n Testing diferents max_depth and min_samples_leaf : \n\n")
+def DecisionTree (max_depth, min_samples_leaf):
+    cv = GroupKFold(n_splits=10)
+    decisionTreeModel = DecisionTreeClassifier(max_depth=max_depth, min_samples_leaf=min_samples_leaf)
+    results = cross_validate(decisionTreeModel, x, y, cv = cv, groups = datas.model, return_train_score=True)
+    trainScore = results['train_score'].mean() * 100
+    testScore = results['test_score'].mean() * 100
+    print("max_depth: %d, min_samples_leaf: %d, average train_score: %.2f, average test_score: %.2f"  
+          % (max_depth, min_samples_leaf, results['train_score'].mean() * 100, results['test_score'].mean() * 100))
+    table = [max_depth, min_samples_leaf, trainScore, testScore]
+    return table
+
+def search():
+    averagesResult = []
+    for max_depth in range(1,33):
+        for min_samples_leaf in [32, 64, 128, 256]:
+            table = DecisionTree(max_depth, min_samples_leaf)
+            averagesResult.append(table)
+    averagesResult = pd.DataFrame(averagesResult, columns = ["max_depth", "min_samples_leaf", "train", "test"])
+    return averagesResult
+
+averagesResult = search()
+print(averagesResult.head())
+print("\n\nBetter results: \n", averagesResult.sort_values("test", ascending=False).head())
+
+def MatrixCorrelation(corr):
+    sns.set_theme(style='white')
+    mask = np.zeros_like(corr, dtype=np.bool_)
+    mask[np.triu_indices_from(mask)] = True
+    f, ax = plt.subplots(figsize = (11,9))
+    cmap = sns.diverging_palette(220, 10, as_cmap=True)
+    sns.heatmap(corr, mask = mask, cmap=cmap, vmax=.3, center=0, square=True, linewidths=.5, cbar_kws={"shrink": .5})
+    plt.show()
+
+#Analisando a correlação do max_depth e min_samples_leaf com o train e test
+corr = averagesResult.corr()
+MatrixCorrelation(corr)
+
+#A partir das correlações analisadas, pôde ser percebido que conforme o min_samples_leaf cresce, o teste se apresenta melhor,
+#sendo assim será testado com min_samples_leaf maiores
+
+#Testando com valores maiores em min_samples_leaf
+def search():
+    averagesResult = []
+    for max_depth in range(1,33):
+        for min_samples_leaf in [128, 192, 256, 512]:
+            table = DecisionTree(max_depth, min_samples_leaf)
+            averagesResult.append(table)
+    averagesResult = pd.DataFrame(averagesResult, columns = ["max_depth", "min_samples_leaf", "train", "test"])
+    return averagesResult
+
+averagesResult = search()
+print(averagesResult.head())
+print("\n\nBetter results: \n", averagesResult.sort_values("test", ascending=False).head())
+
+corr = averagesResult.corr()
+MatrixCorrelation(corr)
+
+#A partir das correlações analisadas, pôde ser percebido que conforme o min_samples_leaf cresce, o teste se apresenta pior, ou seja,
+#quando são usados valores muito altos para min_samples_leaf o teste não melhora
