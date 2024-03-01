@@ -13,6 +13,7 @@ from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.tree import export_graphviz
 import matplotlib.pyplot as plt
+from sklearn.model_selection import GridSearchCV
 
 SEED = 301
 np.random.seed(SEED)
@@ -206,3 +207,25 @@ corr = averagesResult.corr()
 
 averagesResult.sort_values("test", ascending=False).head()
 
+#Explorando o GridSearchCV
+#Definindo os parâmetros que serão usados
+parameterSpace = {
+    "max_depth" : [3, 5],
+    "min_samples_split" : [32, 64, 128, 256],
+    "min_samples_leaf" : [32, 64, 128, 256],
+    "criterion" : ["gini", "entropy"],
+}
+
+search = GridSearchCV(DecisionTreeClassifier(), parameterSpace, cv = GroupKFold(n_splits=10))
+
+search.fit(x, y, groups= datas.model)
+results = pd.DataFrame(search.cv_results_)
+print(results.head())
+print(search.best_params_)
+print(search.best_score_ * 100)
+best = search.best_estimator_
+print(best)
+
+predictions = best.predict(x)
+accuracy = accuracy_score(predictions, y)
+print(accuracy)
