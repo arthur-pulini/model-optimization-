@@ -116,7 +116,7 @@ plt.legend(["train", "test"])
 
 print(averagesResult.sort_values("test", ascending=False))
 
-#Explorando hiperparametros em duas dimensões
+#Explorando hiperparametros em duas dimensões - min_samples_leaf
 print("\n\n Testing diferents max_depth and min_samples_leaf : \n\n")
 def DecisionTree (max_depth, min_samples_leaf):
     cv = GroupKFold(n_splits=10)
@@ -153,7 +153,7 @@ def MatrixCorrelation(corr):
 
 #Analisando a correlação do max_depth e min_samples_leaf com o train e test
 corr = averagesResult.corr()
-MatrixCorrelation(corr)
+#MatrixCorrelation(corr)
 
 #A partir das correlações analisadas, pôde ser percebido que conforme o min_samples_leaf cresce, o teste se apresenta melhor,
 #sendo assim será testado com min_samples_leaf maiores
@@ -173,7 +173,36 @@ print(averagesResult.head())
 print("\n\nBetter results: \n", averagesResult.sort_values("test", ascending=False).head())
 
 corr = averagesResult.corr()
-MatrixCorrelation(corr)
+#MatrixCorrelation(corr)
 
 #A partir das correlações analisadas, pôde ser percebido que conforme o min_samples_leaf cresce, o teste se apresenta pior, ou seja,
 #quando são usados valores muito altos para min_samples_leaf o teste não melhora
+
+#Explorando hiperparametros em três dimensões - min_samples_split
+def DecisionTree (max_depth, min_samples_leaf, min_samples_split):
+    cv = GroupKFold(n_splits=10)
+    decisionTreeModel = DecisionTreeClassifier(max_depth=max_depth, min_samples_leaf=min_samples_leaf, min_samples_split = min_samples_split)
+    results = cross_validate(decisionTreeModel, x, y, cv = cv, groups = datas.model, return_train_score=True)
+    trainScore = results['train_score'].mean() * 100
+    testScore = results['test_score'].mean() * 100
+    table = [max_depth, min_samples_leaf, min_samples_split, trainScore, testScore]
+    return table
+
+def search():
+    averagesResult = []
+    for max_depth in range(1,33):
+        for min_samples_leaf in [32, 64, 128, 256]:
+            for min_samples_split in [32, 64, 128, 256]:
+                table = DecisionTree(max_depth, min_samples_leaf, min_samples_split)
+                averagesResult.append(table)
+    averagesResult = pd.DataFrame(averagesResult, columns = ["max_depth", "min_samples_leaf", 'min_samples_split', "train", "test"])
+    return averagesResult
+
+averagesResult = search()
+print(averagesResult.head())
+
+corr = averagesResult.corr()
+#MatrixCorrelation(corr)
+
+averagesResult.sort_values("test", ascending=False).head()
+
